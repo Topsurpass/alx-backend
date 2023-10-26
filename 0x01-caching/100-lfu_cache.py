@@ -14,18 +14,19 @@ class LFUCache(BaseCaching):
 
     def put(self, key, item):
         """Add new item in the cache"""
-        if key is not None or item is not None:
-            self.cache_data[key] = item
-            if len(self.cache_data) > self.MAX_ITEMS:
-                pop_item = min(self.track_dict, key=self.track_dict.get)
-                self.track_dict.pop(pop_item)
-                self.cache_data.pop(pop_item)
-                print("DISCARD: {}".format(pop_item))
+        if key is None or item is None:
+            return
+        self.cache_data[key] = item
+        if len(self.cache_data) > self.MAX_ITEMS:
+            pop_item = min(self.track_dict, key=self.track_dict.get)
+            self.track_dict.pop(pop_item)
+            self.cache_data.pop(pop_item)
+            print("DISCARD: {}".format(pop_item))
 
-            if key not in self.track_dict:
-                self.track_dict[key] = 0
-            else:
-                self.track_dict[key] += 1
+        if key not in self.track_dict:
+            self.track_dict[key] = 0
+        else:
+            self.track_dict[key] += 1
 
     def get(self, key):
         """Acces the cache storage for item"""
