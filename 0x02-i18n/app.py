@@ -4,8 +4,9 @@
 in order to configure available languages in our app"""
 
 from flask import Flask, render_template, request, g
-from flask_babel import Babel
+from flask_babel import Babel, format_datetime
 from typing import Union, Dict
+import pytz
 
 
 app = Flask(__name__)
@@ -51,17 +52,46 @@ def before_request() -> None:
 @babel.localeselector
 def get_locale() -> str:
     """Retrieve client preferred locale from the locale query parameter
-    in the request URL"""
-    preferred_locale = request.args.get('locale')
+    ii the request URL"""
+    split_queries = request.query_string.decode('utf-8').split('&')
+    query_table = dict(map(
+        lambda x: (x if '=' in x else '{}='.format(x)).split('='),
+        split_queries,
+    ))
+
+    preferred_locale = query_table.get('locale', '')
     if preferred_locale in app.config['LANGUAGES']:
         return preferred_locale
-    return request.accept_languages.best_match(app.config['LANGUAGES'])
+    user_data = getattr(g, 'user', None)
+
+    if user_data and user_data['locale'] in app.config['LANGUAGES']:
+        return user_data['locale']
+    # Locale from http request header
+    http_req_header_locale = request.headers.get('locale', '')
+    if http_req_header_locale in app.config['LANGUAGES']:
+        return http_req_header_locale
+    # Default locale
+    return app.config['BABEL_DEFAULT_LOCALE']
+
+
+@babel.timezoneselector
+def get_timezone() -> str:
+    """Retrieves the timezone for a web page.
+    """
+    timezone = request.args.get('timezone', '').strip()
+    if not timezone and g.user:
+        timezone = g.user['timezone']
+    try:
+        return pytz.timezone(timezone).zone
+    except pytz.exceptions.UnknownTimeZoneError:
+        return app.config['BABEL_DEFAULT_TIMEZONE']
 
 
 @app.route('/')
 def welcome() -> str:
     """Render html page, now with languages configuration"""
-    return render_template('6-index.html')
+    g.time = format_datetime()
+    return render_template('index.html')
 
 
 if __name__ == '__main__':
