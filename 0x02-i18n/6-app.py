@@ -37,7 +37,7 @@ def get_user() -> Union[Dict, None]:
 
     user_id = request.args.get('login_as')
     if user_id:
-        return users[int(user_id)]
+        return users.get(int(user_id))
     return None
 
 
